@@ -1,6 +1,6 @@
 # Personal Fitness Tool
 
-A Streamlit-based application that helps you manage your fitness journey with AI-powered assistance. Track your personal data, set fitness goals, calculate nutrition macros, and get AI-powered recommendations.
+A Streamlit-based application that helps you manage your fitness journey with AI-powered assistance. Track your personal data, set fitness goals, calculate nutrition macros, and get AI-powered recommendations. Modified version of [Tech with Tim's Video](https://www.youtube.com/watch?v=msLovKSj8Q0&t=2745s) to use open-source and local running solutions.
 
 ## Features
 
