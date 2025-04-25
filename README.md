@@ -18,6 +18,13 @@ A Streamlit-based application that helps you manage your fitness journey with AI
 pip install -r requirements.txt
 ```
 
+## Creating Langflow Workflows
+
+1. Run the command
+```bash
+langflow run
+```
+2. Refer [Documentation](https://docs.langflow.org/get-started-quickstart) and above cited video to create appropriate worflows.
 ## Dependencies
 
 - langchain >= 0.3.24
