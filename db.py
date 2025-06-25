@@ -4,7 +4,7 @@ from chromadb.utils import embedding_functions
 import streamlit as st
 import os
 
-DB_DIR = os.path.join(os.path.dirname(__file__), "health_notes")  # Note: using underscore instead of hyphen
+DB_DIR = os.path.join(os.path.dirname(__file__), "health_notes")
 
 @st.cache_resource
 def get_db():
