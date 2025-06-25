@@ -1,10 +1,10 @@
 from profiles import create_profile, get_notes, get_profile
-from ai import get_macros, ask_ai
+from ai import get_macros, ask_ai, check_langflow_connection
 from form_submit import update_personal_info, add_note, delete_note
 import streamlit as st
 
 
-st.title("Personal Fittness Tool")
+st.title("Personal Fitness Tool")
 
 
 @st.fragment
@@ -71,29 +71,40 @@ def macros():
     profile = st.session_state.profile
     nutrition = st.container(border=True)
     nutrition.header("Macros")
-    if nutrition.button("Generate with AI"):
-        result = get_macros(profile.get("general"), profile.get("goals"))
-        profile["nutrition"] = result
-        nutrition.success("AI has generated results.")
+    
+    # Check Langflow connection status
+    is_connected = check_langflow_connection()
+    if is_connected:
+        nutrition.success("🟢 AI Service: Connected")
+    else:
+        nutrition.warning("🔴 AI Service: Disconnected (Langflow not running on localhost:7860)")
+    
+    if nutrition.button("Generate with AI", disabled=not is_connected):
+        if is_connected:
+            result = get_macros(profile.get("general"), profile.get("goals"))
+            profile["nutrition"] = result
+            nutrition.success("AI has generated results.")
+        else:
+            nutrition.error("Cannot generate macros: AI service is not available.")
 
     with nutrition.form("nutrition_form", border=False):
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            calories = st.number_input("Calories", min_value=0, step=1, value=profile["nutrition"].get("calories", 0))
+            calories = st.number_input("Calories", min_value=0, step=1, value=int(profile["nutrition"].get("calories", 0)))
 
         with col2:
-            protien = st.number_input("Protien", min_value=0, step=1, value=profile["nutrition"].get("protein", 0))
+            protein = st.number_input("Protein", min_value=0, step=1, value=int(profile["nutrition"].get("protein", 0)))
 
         with col3:
-            fat = st.number_input("Fat", min_value=0, step=1, value=profile["nutrition"].get("fat", 0))
+            fat = st.number_input("Fat", min_value=0, step=1, value=int(profile["nutrition"].get("fat", 0)))
 
         with col4:
-            carbs = st.number_input("Carbs", min_value=0, step=1, value=profile["nutrition"].get("carbs", 0))
+            carbs = st.number_input("Carbs", min_value=0, step=1, value=int(profile["nutrition"].get("carbs", 0)))
 
         if st.form_submit_button("Save"):
             with st.spinner("Saving..."):
-                st.session_state.profile = update_personal_info(profile, "nutrition", calories=calories, protein=protien, fat=fat, carbs=carbs)
+                st.session_state.profile = update_personal_info(profile, "nutrition", calories=calories, protein=protein, fat=fat, carbs=carbs)
                 st.success("Information Saved")
 
 
@@ -101,32 +112,49 @@ def macros():
 @st.fragment
 def notes():
     st.subheader("Notes: ")
-    for i, note in enumerate(st.session_state.notes):
-        cols = st.columns([5, 1])
-        with cols[0]:
-            st.text(note.get("text"))
-        with cols[1]:
-            if st.button("Delete", key=i):
-                delete_note(note.get("_id"))
-                st.session_state.notes.pop(i)
-                st.rerun()
     
-    new_note = st.text_input("Add a new note: ")
-    if st.button("Add Note"):
-        if new_note:
-            note = add_note(new_note, st.session_state.profile_id)
-            st.session_state.notes.append(note)
-            st.rerun()
+    # Display notes
+    if st.session_state.notes:
+        for i, note in enumerate(st.session_state.notes):
+            cols = st.columns([5, 1])
+            with cols[0]:
+                st.text(note.get("text"))
+            with cols[1]:
+                if st.button("Delete", key=f"del_{note.get('_id')}"):
+                    delete_note(note.get("_id"))
+                    # Update session state without full rerun
+                    st.session_state.notes = [n for n in st.session_state.notes if n.get("_id") != note.get("_id")]
+                    st.rerun()
+    else:
+        st.info("No notes yet. Add your first note below!")
+    
+    # Add new note form
+    with st.form("add_note_form", clear_on_submit=True):
+        new_note = st.text_input("Add a new note: ")
+        if st.form_submit_button("Add Note"):
+            if new_note.strip():
+                note = add_note(new_note, st.session_state.profile_id)
+                st.session_state.notes.append(note)
+                st.success("Note added successfully!")
+                st.rerun()
+            else:
+                st.warning("Please enter a note before adding.")
 
 
-@st.fragment()
+@st.fragment
 def ask_ai_func():
     st.subheader('Ask AI')
-    user_question = st.text_input("Ask AI a question: ")
-    if st.button("Ask AI"):
-        with st.spinner():
-            result = ask_ai(st.session_state.profile, user_question)
-            st.write(result)
+    
+    with st.form("ask_ai_form", clear_on_submit=True):
+        user_question = st.text_input("Ask AI a question: ")
+        if st.form_submit_button("Ask AI"):
+            if user_question.strip():
+                with st.spinner("Getting AI response..."):
+                    result = ask_ai(st.session_state.profile, user_question)
+                    st.success("AI Response:")
+                    st.write(result)
+            else:
+                st.warning("Please enter a question before asking AI.")
 
 def forms():
     if "profile" not in st.session_state:
